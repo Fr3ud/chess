@@ -44,8 +44,56 @@ namespace ChessRules
         public Figure GetFigureAt(Square square)
         {
             if (square.OnBoard())
+            {
                 return figures[square.x, square.y];
+            }
+
             return Figure.none;
+        }
+
+        public bool IsCheck()
+        {
+            return IsCheckAfter(FigureMoving.none);
+        }
+
+        public bool IsCheckAfter(FigureMoving fm)
+        {
+            Board after = Move(fm);
+
+            return after.CanEatKing();
+        }
+
+        bool CanEatKing()
+        {
+            Square badKing = FindBadKing();
+            Moves moves = new Moves(this);
+
+            foreach (FigureOnSquare fs in YieldMyFigureOnSquares())
+            {
+                if (moves.CanMove(new FigureMoving(fs, badKing)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        Square FindBadKing()
+        {
+            Figure badKing = moveColor == Color.white
+                ? Figure.blackKing
+                : Figure.whiteKing;
+
+            foreach (Square square in Square.YieldBoardSquares())
+            {
+                if (GetFigureAt(square) == badKing)
+                {
+                    return square;
+                }
+            }
+
+            return Square.none;
         }
 
         void Init()
@@ -59,8 +107,9 @@ namespace ChessRules
             // 0                                           1 2    3 4 5
 
             string[] parts = fen.Split();
+
             InitFigures(parts[0]);
-            InitMoveColors(parts[1]);
+            InitMoveColor(parts[1]);
             InitCastleFlags(parts[2]);
             InitEnpassant(parts[3]);
             InitDrawNumber(parts[4]);
@@ -73,8 +122,10 @@ namespace ChessRules
             {
                 str = str.Replace(i.ToString(), (i - 1).ToString() + "1");
             }
+
             str = str.Replace('1', (char)Figure.none);
             string[] lines = str.Split('/');
+
             for (int y = 7; y >= 0; y--)
             {
                 for (int x = 0; x < 8; x++)
@@ -84,7 +135,7 @@ namespace ChessRules
             }
         }
 
-        private void InitMoveColors(string str)
+        private void InitMoveColor(string str)
         {
             moveColor = (str == "b") ? Color.black : Color.white;
         }
